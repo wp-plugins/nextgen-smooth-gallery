@@ -1,7 +1,7 @@
 === Plugin Name ===
 Contributors: parisoto
 Tags: nextgen, smoothgallery, jondesign, picture, photo, photos, widgets, pictures, photo-albums, post, admin, media, gallery, images, slideshow, flash
-Tested up to: 2.1
+Tested up to: 2.3
 Stable tag: 0.10
 
 The amazing galery viewer from JonDesign's SmoothGallery for NextGen Gallery.
