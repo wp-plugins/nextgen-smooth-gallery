@@ -17,7 +17,7 @@ You can see the live demo at [Uninuni](http://uninuni.com/wordpress-plugin-nextg
 Just follow this simple steps to get it working
 
 1. Go to [NextGen Gallery](http://wordpress.org/extend/plugins/nextgen-gallery/), download and activate it - Current version 0.90
-1. Download [Nextgen Smooth Gallery](http://downloads.wordpress.org/plugin/nextgen-smooth-gallery.zip)
+1. Download our [Nextgen Smooth Gallery](http://downloads.wordpress.org/plugin/nextgen-smooth-gallery.zip)
      1. To avoid incompatibility, JonDesign's SmoothGallery 2.0 is already included on our download.
      2. Download v.010
 1. Unzip it on /wp-content/plugins/
