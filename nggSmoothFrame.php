@@ -11,6 +11,8 @@ $defaultTransition = $_REQUEST["defaultTransition"];
 $showInfopane      = $_REQUEST["showInfopane"];
 $textShowCarousel  = $_REQUEST["textShowCarousel"];
 $showCarouselOpen  = $_REQUEST["showCarouselOpen"];
+$margin            = $_REQUEST["margin"];
+$align             = $_REQUEST["align"];
 
 include "../../../wp-config.php";
 
@@ -21,6 +23,6 @@ include "../../../wp-config.php";
   </head>
   
   <body>
-    <?= nggSmoothShow($galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen);?>
+    <?= nggSmoothShow($galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen, $margin, $align);?>
   </body>  
 </html>

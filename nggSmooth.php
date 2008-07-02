@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 Set your default values on the admin page and use [smooth=id] on your posts.
 
 If you want a specific gallery to display another configuration, you can use
-  [smooth=id:; width:; height:; timed:; delay:; transition:; arrows:; info:; carousel:; text:; open:; links:;]
+  [smooth=id:; width:; height:; timed:; delay:; transition:; arrows:; info:; carousel:; text:; open:; links:; margin:; align:;]
 
   Example: [smooth=id:4; timed:false; arrows:true; carousel:true; links:true; width:500; height:300;]
 
@@ -55,6 +55,8 @@ If you want a specific gallery to display another configuration, you can use
           text: Text relative to the Carousel
           open: Carousel is opened/closed
          links: true/false to click on the image and open the original image alone
+        margin: Distance from the gallery border to the text. Noticable when using align:float_left; or align:float_right; 
+         align: Aligns the gallery: left, right, center, float_left, float_right
     
 For compatibility with prior versions, you can also use (Not recomended / Deprecated):
   [smooth=id, width, height, timed, arrows, carousel, links]
@@ -103,7 +105,9 @@ Unless the new version has major changes, you should:
                             "showInfopane"      => 0,
                             "textShowCarousel"  => "Pictures",
                             "showCarouselOpen"  => 1,
-                            "gal_code"          => ""); // ngs - NextGen Smooth
+                            "gal_code"          => "",
+                            "margin"            => 8,
+                            "align"             => "center"); // ngs - NextGen Smooth
 
   add_option('dataNextGenSmooth', $data_ngs_default, 'Data from NextGen Smooth Gallery');
   $data_ngs = get_option('dataNextGenSmooth');
@@ -168,6 +172,8 @@ class Smooth_Gallery {
       $showInfopane      = (int)   $data_ngs["showInfopane"];
       $textShowCarousel  = (string)$data_ngs["textShowCarousel"];
       $showCarouselOpen  = (int)   $data_ngs["showCarouselOpen"];
+      $margin            = (int)   $data_ngs["margin"];
+      $align             = (string)$data_ngs["align"];
       
     } else { // New Way [smooth=id:; width:; height:; timed:; delay:; transition:; arrows:; info:; carousel:; text:; open:; links:;]
       $middleValues = substr($middle, 0, -1); // Remove last comma  
@@ -205,6 +211,8 @@ class Smooth_Gallery {
       $showInfopane      = (int)   ($final["info"]      ? $final["info"]      : $data_ngs["showInfopane"]);
       $textShowCarousel  = (string)($final["text"]      ? $final["text"]      : $data_ngs["textShowCarousel"]);
       $showCarouselOpen  = (int)   ($final["open"]      ? $final["open"]      : $data_ngs["showCarouselOpen"]);      
+      $margin            = (int)   ($final["margin"]    ? $final["margin"]    : $data_ngs["margin"]);      
+      $align             = (string)($final["align"]     ? $final["align"]     : $data_ngs["align"]);
     }
 
                       $galleryID = $wpdb->get_var("SELECT gid FROM $wpdb->nggallery WHERE gid  = '$gid' ");
@@ -213,24 +221,26 @@ class Smooth_Gallery {
 
     if (  $galleryID) {              
       if ($data_ngs["use_frames"])
-        $middle = $this->nggSmoothFrame($galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen);
+        $middle = $this->nggSmoothFrame($galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen, $margin, $align);
       else
-        $middle = nggSmoothShow ($galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen);
+        $middle = nggSmoothShow ($galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen, $margin, $align);
     }
     
   	return $this->nggSmoothReplace($begin . $middle . $end); // More than one gallery per post
   }
 
-  function nggSmoothFrame($galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen) {	
+  function nggSmoothFrame($galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen, $margin, $align) {	
   	global $data_ngs;
     
     if($width == "") $width  = $data_ngs["width"];
     if($height== "") $height = $data_ngs["height"];
-    
-    $frame_url = "/wp-content/plugins/nextgen-smooth-gallery/nggSmoothFrame.php?galleryID=$galleryID&width=$width&height=$height&timed=$timed&showArrows=$showArrows&showCarousel=$showCarousel&embedLinks=$embedLinks&delay=$delay&defaultTransition=$defaultTransition&showInfopane=$showInfopane&textShowCarousel=$textShowCarousel&showCarouselOpen=$showCarouselOpen";
-    
+
+    $frame_url = "/wp-content/plugins/nextgen-smooth-gallery/nggSmoothFrame.php?galleryID=$galleryID&width=$width&height=$height&timed=$timed&showArrows=$showArrows&showCarousel=$showCarousel&embedLinks=$embedLinks&delay=$delay&defaultTransition=$defaultTransition&showInfopane=$showInfopane&textShowCarousel=$textShowCarousel&showCarouselOpen=$showCarouselOpen&margin=&align="; // margin and align goes to the IFrame
+
     // Increases frame width and height by 3px in order to display the complete image on the inside.    
-    return "<iframe width=\"". ($width+3) ."px\" height=\"". ($height+3) ."px\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"no\" frameborder=\"0\" name=\"smooth_frame_".rand()."\" src=\"" . BASE_URL . $frame_url . "\"></iframe>";
+    return "<p style=\"".nggSmoothAlign($align, $margin, "iframe")."\">
+              <iframe width=\"". ($width+3) ."px\" height=\"". ($height+3) ."px\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"no\" frameborder=\"0\" name=\"smooth_frame_".rand()."\" src=\"" . BASE_URL . $frame_url . "\"></iframe>
+            </p>";
   }  
   
   function admin_menu() {
@@ -261,6 +271,8 @@ class Smooth_Gallery {
       $data_ngs['showInfopane']      = ($_REQUEST['showInfopane']    ?1:0);
       $data_ngs['textShowCarousel']  =  $_REQUEST['textShowCarousel'];
       $data_ngs['showCarouselOpen']  = ($_REQUEST['showCarouselOpen']?1:0);
+      $data_ngs['margin']            =  $_REQUEST['margin'];
+      $data_ngs['align']             =  $_REQUEST['align'];
       
       update_option('dataNextGenSmooth', $data_ngs);
       $msg = "Data saved successfully.";
@@ -308,7 +320,7 @@ class Smooth_Gallery {
               <div style="width:120px; float:left;"> <input type="checkbox" id="timed" name="timed" <?= ($data_ngs['timed']? "checked=\"checked\"": "") ?> onClick="if(this.checked){document.getElementById('timed_options').style.display='';} else{document.getElementById('timed_options').style.display='none';};" > </div>
             </div>                    
             
-            <fieldset id="timed_options" class="options" style="padding:20px; margin-top:0px; display:none;">
+            <fieldset id="timed_options" class="options" style="padding:20px; margin-top:0px; display:<?= ($data_ngs['timed']?'':'none')?>;">
               <legend> Timed Options </legend>
             
               <div style="clear:both;">
@@ -329,14 +341,8 @@ class Smooth_Gallery {
                   </select>
                 </div>
               </div>
-            </fieldset>
+            </fieldset>           
 
-            <script>
-              if ("<?=$data_ngs['timed'];?>" == "1") {
-                document.getElementById('timed_options').style.display='';
-              }
-            </script>
-            
             <div style="clear:both; padding-top:10px;">
               <div style="width:120px; float:left;"> Show Arrows </div>
               <div style="width:120px; float:left;"> <input type="checkbox" name="showArrows" <?= ($data_ngs['showArrows']? "checked=\"checked\"": "") ?>> </div>
@@ -352,7 +358,7 @@ class Smooth_Gallery {
               <div style="width:120px; float:left;"> <input type="checkbox" name="showCarousel" <?= ($data_ngs['showCarousel']? "checked=\"checked\"": "") ?> onClick="if(this.checked){document.getElementById('carousel_options').style.display='';} else{document.getElementById('carousel_options').style.display='none';};"> </div>
             </div>
 
-            <fieldset id="carousel_options" class="options" style="padding:20px; margin-top:0px; display:none;">
+            <fieldset id="carousel_options" class="options" style="padding:20px; margin-top:0px; display:<?= ($data_ngs['showCarousel']?'':'none') ?>;">
               <legend> Carousel Options </legend>
             
               <div style="clear:both;">
@@ -366,19 +372,36 @@ class Smooth_Gallery {
               </div>
             </fieldset>
             
-            <script>
-              if ("<?=$data_ngs['showCarousel'];?>" == "1") {
-                document.getElementById('carousel_options').style.display='';
-              }
-            </script>
-            
-            <div style="clear:both; padding-top:10px; padding-bottom:20px;">
+            <div style="clear:both; padding-top:10px;">
               <div style="width:120px; float:left;"> Embed Links </div>
               <div style="width:120px; float:left;"> <input type="checkbox" name="embedLinks" <?= ($data_ngs['embedLinks']? "checked=\"checked\"": "") ?>> </div>
             </div>
-           
+                      
+            <div style="clear:both; padding-top:10px;">
+              <div style="width:120px; float:left;"> Align </div>
+                <div style="width:120px; float:left;"> 
+                  <select name="align">
+                    <option value="left"        <?= ($data_ngs['align'] == "left"        ? "selected":"") ?> onClick="document.getElementById('align_options').style.display='none';"> Left        </option>
+                    <option value="right"       <?= ($data_ngs['align'] == "right"       ? "selected":"") ?> onClick="document.getElementById('align_options').style.display='none';"> Right       </option>
+                    <option value="center"      <?= ($data_ngs['align'] == "center"      ? "selected":"") ?> onClick="document.getElementById('align_options').style.display='none';"> Center      </option>
+                    <option value="float_left"  <?= ($data_ngs['align'] == "float_left"  ? "selected":"") ?> onClick="document.getElementById('align_options').style.display='';"    > Float Left  </option>
+                    <option value="float_right" <?= ($data_ngs['align'] == "float_right" ? "selected":"") ?> onClick="document.getElementById('align_options').style.display='';"    > Float Right </option>
+                  </select>
+                </div>
+            </div>
+
+            <fieldset id="align_options" class="options" style="padding:20px; margin-top:0px; display:<? if ( ($data_ngs['align']=='float_left') || ($data_ngs['align']=='float_right') ) { echo '';} else {echo 'none';}?>;">
+              <legend> Align Options </legend>
+              <div style="clear:both; padding-top:10px;">
+                <div style="width:120px; float:left;"> Margin </div>
+                <div style="width:120px; float:left;"> <input type="text" name="margin" value="<?=$data_ngs['margin']?>" style="width:60px;">px </div>
+              </div>
+            </fieldset>
+            
+            <div style="clear:both; padding-bottom:8px;"></div>
+            
             <div class="submit">           
-              <div style="clear:both; padding-top:10px; padding-bottom:50px;">
+              <div style="clear:both; padding-bottom:50px;">
                 <div style="width:120px; float:left;"> Use IFrames </div>
                 <div style="width:40px; float:left;"> <input type="checkbox" name="use_frames" <?= ($data_ngs['use_frames']? "checked=\"checked\"": "") ?>> </div>
                 <div style=" float:left; width:700px;"> 

@@ -10,7 +10,29 @@ function nggSmoothHead() {
        ';
 }
 
-function nggSmoothShow($galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen) {	
+function nggSmoothAlign($align, $margin, $who="") {
+  if ($who == "iframe") {
+    switch ($align) {
+      case "left"       : $align = "text-align:left;";                   break;
+      case "right"      : $align = "text-align:right;";                  break;
+      case "center"     : $align = "text-align:center;";                 break;
+      case "float_left" : $align = "float:left;  margin:".$margin."px;"; break;
+      case "float_right": $align = "float:right; margin:".$margin."px;"; break;
+    }
+  } else {
+    switch ($align) {
+      case "left"       : $align = "margin:0px auto 0px 0px;";           break;
+      case "right"      : $align = "margin:0px 0px 0px auto;";           break;
+      case "center"     : $align = "margin:0px auto;";                   break;
+      case "float_left" : $align = "float:left;  margin:".$margin."px;"; break;
+      case "float_right": $align = "float:right; margin:".$margin."px;"; break;
+    }
+  }
+  
+  return $align;
+}
+
+function nggSmoothShow($galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen, $margin, $align) {	
   global $wpdb;
   
   $galleryID         =  (int)    $galleryID;
@@ -25,6 +47,8 @@ function nggSmoothShow($galleryID, $width, $height, $timed, $showArrows, $showCa
   $showInfopane      = ((int)    $showInfopane    ?'true':'false');  
   $textShowCarousel  =  (string) $textShowCarousel; 
   $showCarouselOpen  = ((int)    $showCarouselOpen?'true':'false');
+  $margin            =  (int)    $margin; 
+  $align             =  (string) $align;
 
   // print_r("$galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen");    
   
@@ -64,10 +88,9 @@ function nggSmoothShow($galleryID, $width, $height, $timed, $showArrows, $showCa
             window.addEvent("domready", startGallery_'.$galleryID.');
           </script>
          ';
-  
-// $out .= '<div style="clear:both; text-align:center;">'; // Using 'margin:0 auto;' centers the div 
-  $out .= '<div style="text-align:left; width: '.$width.'px; height: '.$height.'px; border:1px solid;">';
-  $out .= '<div id="myGallery_'.$galleryID.'" class="myGallery" style="display:none; text-align:left; margin:0 auto; width: '.$width.'px !important; height: '.$height.'px !important;">';
+
+  $out .= '<div style="width: '.$width.'px; height: '.$height.'px; border:1px solid; '.nggSmoothAlign($align, $margin).' clear:both;">'; // margin centers div and clear makes it work like a container 
+  $out .= '<div id="myGallery_'.$galleryID.'" class="myGallery" style="display:none; width: '.$width.'px !important; height: '.$height.'px !important;">';
 
   foreach ($pictures as $picture) {
     $out .= ' <div class="imageElement">
