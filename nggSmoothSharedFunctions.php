@@ -1,4 +1,51 @@
 <?php
+//#################################################################
+// Initial Values
+  $data_ngs_default = array("width"             => 400,
+                            "height"            => 400,
+                            "timed"             => 0,
+                            "showArrows"        => 1,
+                            "showCarousel"      => 1,
+                            "embedLinks"        => 1,
+                            "use_frames"        => 0,
+                            "delay"             => 9000,
+                            "defaultTransition" => "fade", // fadeslideleft, continuoushorizontal, continuousvertical, crossfade, fadebg 
+                            "showInfopane"      => 0,
+                            "textShowCarousel"  => "Pictures",
+                            "showCarouselOpen"  => 1,
+                            "gal_code"          => "",
+                            "margin"            => 8,
+                            "align"             => "center"); // ngs - NextGen Smooth
+
+  add_option('dataNextGenSmooth', $data_ngs_default, 'Data from NextGen Smooth Gallery');
+  $data_ngs = get_option('dataNextGenSmooth');
+  
+  define('BASE_URL'  , get_option('siteurl'));
+  define('SMOOTH_URL', get_option('siteurl').'/wp-content/plugins/' . dirname(plugin_basename(__FILE__))); // get_bloginfo('wpurl')
+
+//#################################################################
+
+function nggSmoothHeadAdmin() { ?>
+  <!-- begin nextgen-smooth admin scripts -->
+    <style>    
+      fieldset {
+        border:1px solid #DFDFDF;
+        background:#fff;
+        -moz-border-radius-bottomleft:6px;
+        -moz-border-radius-bottomright:6px;
+        -moz-border-radius-topleft:6px;
+        -moz-border-radius-topright:6px;      
+      }
+      
+      legend {
+        font-weight:bold;
+        padding:0px 6px;
+      }    
+    </style>
+  <!-- end nextgen-smooth admin scripts -->    
+  <?php  
+  nggSmoothHead();
+}
 
 function nggSmoothHead() {
   echo '<!-- begin nextgen-smooth scripts -->
@@ -32,77 +79,113 @@ function nggSmoothAlign($align, $margin, $who="") {
   return $align;
 }
 
-function nggSmoothShow($galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen, $margin, $align) {	
-  global $wpdb;
+function nggSmoothShow($info, $pictures = null) {	
+  global $wpdb, $data_ngs_default;  
   
-  $galleryID         =  (int)    $galleryID;
-  $width             =  (int)    $width;
-  $height            =  (int)    $height;
-  $timed             = ((int)    $timed           ?'true':'false');    
-  $showArrows        = ((int)    $showArrows      ?'true':'false');    
-  $showCarousel      = ((int)    $showCarousel    ?'true':'false');    
-  $embedLinks        = ((int)    $embedLinks      ?'true':'false');    
-  $delay             =  (int)    $delay;
-  $defaultTransition =  (string) $defaultTransition;
-  $showInfopane      = ((int)    $showInfopane    ?'true':'false');  
-  $textShowCarousel  =  (string) $textShowCarousel; 
-  $showCarouselOpen  = ((int)    $showCarouselOpen?'true':'false');
-  $margin            =  (int)    $margin; 
-  $align             =  (string) $align;
+  $info = array_merge( $data_ngs_default, $info );
+  
+  extract($info);
 
-  // print_r("$galleryID, $width, $height, $timed, $showArrows, $showCarousel, $embedLinks, $delay, $defaultTransition, $showInfopane, $textShowCarousel, $showCarouselOpen");    
-  
   // Get the pictures
-  $ngg_options = get_option ('ngg_options');  
-  $pictures    = $wpdb->get_results("SELECT t.*, tt.* FROM $wpdb->nggallery AS t INNER JOIN $wpdb->nggpictures AS tt ON t.gid = tt.galleryid WHERE t.gid = '$galleryID' AND tt.exclude != 1 ORDER BY tt.$ngg_options[galSort] $ngg_options[galSortDir] ");
-
+  if ($galleryID) {
+    $ngg_options = get_option ('ngg_options');  
+    $pictures    = $wpdb->get_results("SELECT t.*, tt.* FROM $wpdb->nggallery AS t INNER JOIN $wpdb->nggpictures AS tt ON t.gid = tt.galleryid WHERE t.gid = '$galleryID' AND tt.exclude != 1 ORDER BY tt.$ngg_options[galSort] $ngg_options[galSortDir] ");
+               
+    $final = array();    
+    foreach($pictures as $picture) {
+      $aux = array();
+      $aux["title"] = $picture->alttext; // $picture->alttext;
+      $aux["desc"]  = $picture->description;
+      $aux["link"]  = BASE_URL . "/" . $picture->path ."/" . $picture->filename;
+      $aux["img"]   = BASE_URL . "/" . $picture->path ."/" . $picture->filename;
+      $aux["thumb"] = BASE_URL . "/" . $picture->path ."/thumbs/thumbs_" . $picture->filename;
+      
+      $final[] = $aux;
+    }
+    
+    $pictures = $final;
+    
+  } else {
+    $galleryID = rand();
+  }
+  
   if (empty($pictures)) return "";
   
   // Gather pictures and Smooth Gallery
   $out = '<script type="text/javascript">
             function startGallery_'.$galleryID.'() { 
-              var myGallery = new gallery($("myGallery_'.$galleryID.'"), {  '; // Leave a blank space in case there is no last comma to be removed above
+              var myGallery = new gallery($("myGallery_'.$galleryID.'"), {  '; // Leave a blank space in case there is no last comma to be removed later
               
-  $out .= " timed: $timed,";
-  if ($timed == 'true') { 
-    if ($delay             != 0 ) $out .= " delay: $delay,";
-    if ($defaultTransition != "") $out .= " defaultTransition: \"$defaultTransition\",";
+  $out .= "                timed: " . ($timed       ?'true':'false') . ",";
+  $out .= "         showCarousel: " . ($showCarousel?'true':'false') . ",";
+  $out .= "         showInfopane: " . ($showInfopane?'true':'false') . ",";
+  $out .= "           showArrows: " . ($showArrows  ?'true':'false') . ",";
+  $out .= "           embedLinks: " . ($embedLinks  ?'true':'false') . ",";
+  $out .= " slideInfoZoneOpacity: 0.80,";
+
+  if ($timed) { 
+    if ($delay)             $out .= " delay: $delay,";
+    if ($defaultTransition) $out .= " defaultTransition: \"$defaultTransition\",";
   }
   
-  $out .= " showCarousel: $showCarousel,";
-  if ($showCarousel == 'true') {                                   
-    if ($textShowCarousel  != "") $out .= " textShowCarousel: \"$textShowCarousel\",";
-  }
-  $out .= " showInfopane: $showInfopane,";
-  $out .= "   showArrows: $showArrows,";
-  $out .= "   embedLinks: $embedLinks,";
-
+  if ($showCarousel)
+    if ($textShowCarousel)
+      $out .= " textShowCarousel: \"$textShowCarousel\",";
+    
   $out = substr($out, 0, -1); // Remove last comma
   $out .= '   });
               
               document.getElementById("myGallery_'.$galleryID.'").style.display = "block";
-              
-              if ("'.$showCarouselOpen.'" == "true")
-                myGallery.toggleCarousel();
-              }
+          ';
+
+  if ($showCarousel && $showCarouselOpen)
+    $out .= ' myGallery.toggleCarousel(); ';
+
+  $out .= ' }
             window.addEvent("domready", startGallery_'.$galleryID.');
           </script>
          ';
+/*
+  $out .= " <style>
+              .jdGallery .slideInfoZone {
+                height: 78px;
+              }
 
-  $out .= '<div style="width: '.$width.'px; height: '.$height.'px; border:1px solid; '.nggSmoothAlign($align, $margin).' clear:both;">'; // margin centers div and clear makes it work like a container 
+              .jdGallery .slideInfoZone h2 {
+                  font-size: 1.5em;
+                font-family: Arial;
+                font-weight: bold;
+                     margin: 2px 4px;
+                      color: #FFF000;
+              }
+
+              .jdGallery .slideInfoZone p {
+                  font-size: 2.0em;
+                font-family: Arial;
+                font-weight: bold;  
+                     margin: 0px 8px;
+                      color: #FFFFFF;
+                line-height: 1.0;
+              }
+            </style>";
+*/
+
+  $out .= '<div style="width: '.$width.'px; height: '.$height.'px; border:0px solid; '.nggSmoothAlign($align, $margin).' clear:both;">'; // margin centers div and clear makes it work like a container 
   $out .= '<div id="myGallery_'.$galleryID.'" class="myGallery" style="display:none; width: '.$width.'px !important; height: '.$height.'px !important;">';
+    
+  // Error with only one element
+  foreach ($pictures as $picture)
+    if ($picture["img"]) {
+      $out .= "<div class=\"imageElement\">";
+      $out .= "  <h3> " . $picture["title"] . "</h3>";
+      $out .= "  <p style=\"color: #FFF000;\"> "  . $picture["desc"]  . "</p>";
+      $out .= "  <a target=\"_blank\" href=\"" . $picture["link"] . "\" title=\"open image\" class=\"open\"></a>";
+      $out .= "  <img src=\"" . $picture["img"]   . "\" class=\"full\" />";
+      $out .= "  <img src=\"" . $picture["thumb"] . "\" class=\"thumbnail\" />";      
+      $out .= "</div>";    
+    }
 
-  foreach ($pictures as $picture) {
-    $out .= ' <div class="imageElement">
-                <h3>'.$picture->title.'</h3>
-                <p>'.$picture->description.'</p>
-                <a target="_blank" href="'.BASE_URL."/".$picture->path."/".$picture->filename.'" title="open image" class="open"></a>
-                <img src="'.BASE_URL."/".$picture->path."/".$picture->filename.'" class="full" />
-                <img src="'.BASE_URL."/".$picture->path."/thumbs/thumbs_".$picture->filename.'" class="thumbnail" />
-              </div>
-            ';
-  }
-  $out .= ' </div></div>'; //</div>';
+  $out .= ' </div></div>';
 
   return $out;  
 }
